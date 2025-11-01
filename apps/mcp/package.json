@@ -1,0 +1,30 @@
+{
+  "name": "@anarchymcp/mcp",
+  "version": "0.1.0",
+  "description": "SSE-based MCP server for AnarchyMCP",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@repo/eslint-config": "workspace:*",
+    "@types/node": "^22.15.3",
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "typescript": "^5.9.2",
+    "tsx": "^4.7.0"
+  }
+}
