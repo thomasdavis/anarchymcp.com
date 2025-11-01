@@ -1,3 +1,6 @@
 {
-  "version": 2
+  "version": 2,
+  "buildCommand": "cd apps/web && pnpm install && cd ../.. && pnpm turbo build --filter=@anarchymcp/web...",
+  "outputDirectory": "apps/web/.next",
+  "installCommand": "pnpm install --frozen-lockfile"
 }
