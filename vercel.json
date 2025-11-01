@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter @anarchymcp/web build",
-  "outputDirectory": "apps/web/.next",
-  "installCommand": "pnpm install"
+  "buildCommand": "turbo run build",
+  "outputDirectory": "apps/web/.next"
 }
