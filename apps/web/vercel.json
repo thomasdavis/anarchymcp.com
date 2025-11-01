@@ -1,6 +1,0 @@
-{
-  "buildCommand": "cd ../.. && pnpm install && pnpm turbo build --filter=@anarchymcp/web",
-  "installCommand": "echo 'Skipping install, handled in buildCommand'",
-  "framework": "nextjs",
-  "outputDirectory": ".next"
-}
