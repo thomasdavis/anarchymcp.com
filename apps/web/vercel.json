@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd ../.. && turbo build --filter=@anarchymcp/web...",
+  "installCommand": "pnpm install --frozen-lockfile"
+}
