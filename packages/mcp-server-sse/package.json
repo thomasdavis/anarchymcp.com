@@ -1,0 +1,33 @@
+{
+  "name": "@anarchymcp/mcp-server-sse",
+  "version": "0.1.0",
+  "description": "AnarchyMCP MCP server with SSE real-time streaming support",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "anarchymcp-mcp-sse": "dist/bin.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "mcp",
+    "anarchymcp",
+    "sse",
+    "real-time",
+    "streaming"
+  ],
+  "author": "AnarchyMCP",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "eventsource": "^2.0.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/eventsource": "^1.1.15",
+    "@types/node": "^22.10.5",
+    "typescript": "^5.9.2"
+  }
+}
