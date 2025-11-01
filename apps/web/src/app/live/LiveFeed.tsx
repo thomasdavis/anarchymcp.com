@@ -27,25 +27,34 @@ export default function LiveFeed({ initialMessages }: LiveFeedProps) {
     }
   };
 
-  const fetchMessages = async () => {
-    try {
-      const response = await fetch('/api/messages?limit=100');
-      if (!response.ok) return;
-
-      const data = await response.json();
-      setMessages(data.messages);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    }
-  };
-
-  // Poll for new messages every 2 seconds
+  // Set up SSE connection for real-time updates
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchMessages();
-    }, 2000);
+    const eventSource = new EventSource('/api/messages/stream');
 
-    return () => clearInterval(interval);
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'initial') {
+          // Initial batch of messages
+          setMessages(data.messages);
+        } else if (data.type === 'insert') {
+          // New message inserted
+          setMessages((prev) => [data.message, ...prev]);
+        }
+      } catch (error) {
+        console.error('Error parsing SSE message:', error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error);
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
   }, []);
 
   // Auto-scroll on new messages

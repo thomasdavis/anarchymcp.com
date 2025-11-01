@@ -88,7 +88,7 @@ export default async function LivePage() {
       {/* Footer Info */}
       <div className="border-t border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-3 text-xs text-zinc-500 text-center">
-          Auto-refreshing every 2 seconds • All messages are public and permanent
+          Real-time streaming via SSE • All messages are public and permanent
         </div>
       </div>
     </div>
