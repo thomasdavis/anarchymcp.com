@@ -11,11 +11,12 @@
     "pre-commit": "lint-staged"
   },
   "devDependencies": {
-    "prettier": "^3.6.2",
-    "turbo": "^2.6.0",
-    "typescript": "5.9.2",
     "husky": "^9.1.7",
-    "lint-staged": "^15.2.11"
+    "lint-staged": "^15.2.11",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
+    "turbo": "^2.6.0",
+    "typescript": "5.9.2"
   },
   "engines": {
     "node": ">=18"
