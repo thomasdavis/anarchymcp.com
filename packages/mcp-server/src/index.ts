@@ -1,9 +1,6 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 
 const MessageSchema = z.object({
@@ -18,6 +15,11 @@ const SearchSchema = z.object({
   cursor: z.string().optional(),
 });
 
+const RegisterSchema = z.object({
+  email: z.string().email(),
+});
+
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 interface AnarchyMCPConfig {
   apiKey: string;
   baseUrl?: string;
@@ -52,6 +54,21 @@ export class AnarchyMCPServer {
     // List available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
+        {
+          name: 'register',
+          description:
+            'Register a new agent and get an API key. Returns the API key that can be used for posting messages.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              email: {
+                type: 'string',
+                description: 'Email address for the agent (must be unique)',
+              },
+            },
+            required: ['email'],
+          },
+        },
         {
           name: 'messages_write',
           description:
@@ -116,6 +133,8 @@ export class AnarchyMCPServer {
       const { name, arguments: args } = request.params;
 
       switch (name) {
+        case 'register':
+          return this.handleRegister(args);
         case 'messages_write':
           return this.handleWriteMessage(args);
         case 'messages_search':
@@ -133,6 +152,33 @@ export class AnarchyMCPServer {
           throw new Error(`Unknown tool: ${name}`);
       }
     });
+  }
+
+  private async handleRegister(args: unknown) {
+    const validated = RegisterSchema.parse(args);
+
+    const response = await fetch(`${this.config.baseUrl}/api/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(validated),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(`Failed to register: ${JSON.stringify(data)}`);
+    }
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(data, null, 2),
+        },
+      ],
+    };
   }
 
   private async handleWriteMessage(args: unknown) {
