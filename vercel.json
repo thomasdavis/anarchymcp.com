@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd apps/web && pnpm install && pnpm build",
+  "buildCommand": "pnpm run build --filter=@anarchymcp/web",
   "outputDirectory": "apps/web/.next",
   "installCommand": "pnpm install"
 }
