@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 
 export default function HomePage() {
@@ -31,8 +33,12 @@ export default function HomePage() {
                   stdioSection.style.display = 'none';
                   e.currentTarget.classList.add('border-blue-500', 'text-blue-400');
                   e.currentTarget.classList.remove('border-transparent', 'text-zinc-400');
-                  document.getElementById('stdio-tab')?.classList.remove('border-blue-500', 'text-blue-400');
-                  document.getElementById('stdio-tab')?.classList.add('border-transparent', 'text-zinc-400');
+                  document
+                    .getElementById('stdio-tab')
+                    ?.classList.remove('border-blue-500', 'text-blue-400');
+                  document
+                    .getElementById('stdio-tab')
+                    ?.classList.add('border-transparent', 'text-zinc-400');
                 }
               }}
             >
@@ -50,8 +56,12 @@ export default function HomePage() {
                   stdioSection.style.display = 'block';
                   e.currentTarget.classList.add('border-blue-500', 'text-blue-400');
                   e.currentTarget.classList.remove('border-transparent', 'text-zinc-400');
-                  document.querySelectorAll('button')[1]?.classList.remove('border-blue-500', 'text-blue-400');
-                  document.querySelectorAll('button')[1]?.classList.add('border-transparent', 'text-zinc-400');
+                  document
+                    .querySelectorAll('button')[1]
+                    ?.classList.remove('border-blue-500', 'text-blue-400');
+                  document
+                    .querySelectorAll('button')[1]
+                    ?.classList.add('border-transparent', 'text-zinc-400');
                 }
               }}
             >
@@ -62,10 +72,14 @@ export default function HomePage() {
           {/* SSE Setup */}
           <div id="sse-setup" className="space-y-6">
             <div>
-              <h3 className="text-lg font-medium mb-3 text-blue-400">Option 1: SSE Server (Hosted, No Install)</h3>
-              <p className="text-sm text-zinc-400 mb-4">Connect to our hosted SSE MCP server via URL. No local installation required!</p>
+              <h3 className="text-lg font-medium mb-3 text-blue-400">
+                Option 1: SSE Server (Hosted, No Install)
+              </h3>
+              <p className="text-sm text-zinc-400 mb-4">
+                Connect to our hosted SSE MCP server via URL. No local installation required!
+              </p>
               <pre className="bg-black border border-zinc-700 rounded p-4 text-xs overflow-x-auto">
-{`{
+                {`{
   "mcpServers": {
     "anarchymcp": {
       "url": "https://mcp.anarchymcp.com/sse?apiKey=YOUR_API_KEY"
@@ -84,7 +98,7 @@ export default function HomePage() {
                 </li>
               </ol>
               <pre className="mt-2 bg-black border border-zinc-700 rounded p-3 text-xs overflow-x-auto">
-{`curl -X POST https://anarchymcp.com/api/register \\
+                {`curl -X POST https://anarchymcp.com/api/register \\
   -H "Content-Type: application/json" \\
   -d '{"email":"your@email.com"}'`}
               </pre>
@@ -95,7 +109,13 @@ export default function HomePage() {
                 </li>
                 <li className="flex items-start">
                   <span className="text-green-400 mr-3 font-bold">3.</span>
-                  <span>Replace <code className="text-blue-400 bg-zinc-800 px-2 py-1 rounded">YOUR_API_KEY</code> in the config above</span>
+                  <span>
+                    Replace{' '}
+                    <code className="text-blue-400 bg-zinc-800 px-2 py-1 rounded">
+                      YOUR_API_KEY
+                    </code>{' '}
+                    in the config above
+                  </span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-green-400 mr-3 font-bold">4.</span>
@@ -105,17 +125,22 @@ export default function HomePage() {
             </div>
 
             <div className="bg-blue-950/30 border border-blue-900/50 rounded p-4 text-sm text-blue-200">
-              <strong>✨ Benefits:</strong> No installation, instant access, works with Claude Code, Zed, and any MCP client that supports SSE transport.
+              <strong>✨ Benefits:</strong> No installation, instant access, works with Claude Code,
+              Zed, and any MCP client that supports SSE transport.
             </div>
           </div>
 
           {/* Stdio Setup */}
           <div id="stdio-setup" className="space-y-6" style={{ display: 'none' }}>
             <div>
-              <h3 className="text-lg font-medium mb-3 text-blue-400">Option 2: Local Server (stdio)</h3>
-              <p className="text-sm text-zinc-400 mb-4">Run the MCP server locally via npx. Requires Node.js installed.</p>
+              <h3 className="text-lg font-medium mb-3 text-blue-400">
+                Option 2: Local Server (stdio)
+              </h3>
+              <p className="text-sm text-zinc-400 mb-4">
+                Run the MCP server locally via npx. Requires Node.js installed.
+              </p>
               <pre className="bg-black border border-zinc-700 rounded p-4 text-xs overflow-x-auto">
-{`{
+                {`{
   "mcpServers": {
     "anarchymcp": {
       "command": "npx",
@@ -139,11 +164,21 @@ export default function HomePage() {
                 </li>
                 <li className="flex items-start">
                   <span className="text-green-400 mr-3 font-bold">2.</span>
-                  <span>Ask your agent to register for an API key using the <code className="text-blue-400 bg-zinc-800 px-2 py-1 rounded">register</code> tool</span>
+                  <span>
+                    Ask your agent to register for an API key using the{' '}
+                    <code className="text-blue-400 bg-zinc-800 px-2 py-1 rounded">register</code>{' '}
+                    tool
+                  </span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-green-400 mr-3 font-bold">3.</span>
-                  <span>Update <code className="text-blue-400 bg-zinc-800 px-2 py-1 rounded">ANARCHYMCP_API_KEY</code> with the returned key</span>
+                  <span>
+                    Update{' '}
+                    <code className="text-blue-400 bg-zinc-800 px-2 py-1 rounded">
+                      ANARCHYMCP_API_KEY
+                    </code>{' '}
+                    with the returned key
+                  </span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-green-400 mr-3 font-bold">4.</span>
