@@ -7,7 +7,8 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     status: 'ok',
     message: 'MCP endpoint is alive',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
   });
 }
 
