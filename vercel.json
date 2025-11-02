@@ -1,7 +1,0 @@
-{
-  "buildCommand": "pnpm --filter='@anarchymcp/web' build",
-  "devCommand": "pnpm --filter='@anarchymcp/web' dev",
-  "installCommand": "pnpm install",
-  "framework": null,
-  "outputDirectory": "apps/web/.next"
-}
