@@ -9,6 +9,76 @@ const messageSchema = z.object({
   meta: z.record(z.any()).optional(),
 });
 
+// Discord webhook notification
+const DISCORD_WEBHOOK_URL =
+  process.env.DISCORD_WEBHOOK_URL ||
+  'https://discord.com/api/webhooks/1434676908083118223/HKSmWqihhpYSjywpd8LMybN9AQ6AYW0g52UiUpqxPJbBvW_32oIhI0AMcr7bpLfY0x2w';
+
+async function sendDiscordNotification(data: {
+  role: string;
+  content: string;
+  meta?: Record<string, any>;
+  email: string;
+  messageId: string;
+  createdAt: string;
+}) {
+  if (!DISCORD_WEBHOOK_URL) {
+    return;
+  }
+
+  const truncatedContent =
+    data.content.length > 1000 ? data.content.substring(0, 1000) + '...' : data.content;
+
+  const embed = {
+    title: '📨 New Message Posted',
+    description: truncatedContent,
+    color: data.role === 'user' ? 0x5865f2 : data.role === 'assistant' ? 0x57f287 : 0x99aab5,
+    fields: [
+      {
+        name: 'Role',
+        value: data.role,
+        inline: true,
+      },
+      {
+        name: 'From',
+        value: data.email,
+        inline: true,
+      },
+      {
+        name: 'Message ID',
+        value: `\`${data.messageId}\``,
+        inline: false,
+      },
+    ],
+    timestamp: data.createdAt,
+    footer: {
+      text: 'AnarchyMCP',
+    },
+  };
+
+  if (data.meta && Object.keys(data.meta).length > 0) {
+    embed.fields.push({
+      name: 'Metadata',
+      value: `\`\`\`json\n${JSON.stringify(data.meta, null, 2).substring(0, 200)}\n\`\`\``,
+      inline: false,
+    });
+  }
+
+  const response = await fetch(DISCORD_WEBHOOK_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      embeds: [embed],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Discord webhook failed: ${response.status} ${response.statusText}`);
+  }
+}
+
 // GET /api/messages - Public read access
 export async function GET(request: NextRequest) {
   try {
@@ -33,7 +103,7 @@ export async function GET(request: NextRequest) {
       query = query.textSearch('content', search);
     }
 
-    const { data, error } = await query as {
+    const { data, error } = (await query) as {
       data: Array<{
         id: string;
         role: string;
@@ -47,10 +117,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching messages:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch messages' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 });
     }
 
     if (!data) {
@@ -71,10 +138,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Unexpected error in GET /messages:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -85,46 +149,35 @@ export async function POST(request: NextRequest) {
     const apiKey = request.headers.get('x-api-key');
 
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Missing x-api-key header' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Missing x-api-key header' }, { status: 401 });
     }
 
     // Validate API key format
     if (!apiKey.startsWith('amcp_')) {
-      return NextResponse.json(
-        { error: 'Invalid API key format' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Invalid API key format' }, { status: 401 });
     }
 
     // Verify API key exists and is active
-    const { data: apiKeyData, error: keyError } = await supabaseAdmin
+    const { data: apiKeyData, error: keyError } = (await supabaseAdmin
       .from('api_keys')
       .select('id, active, email')
       .eq('key', apiKey)
-      .single() as {
-        data: { id: string; active: boolean; email: string } | null;
-        error: any;
-      };
+      .single()) as {
+      data: { id: string; active: boolean; email: string } | null;
+      error: any;
+    };
 
     if (keyError || !apiKeyData) {
-      return NextResponse.json(
-        { error: 'Invalid API key' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Invalid API key' }, { status: 401 });
     }
 
     if (!apiKeyData.active) {
-      return NextResponse.json(
-        { error: 'API key is inactive' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'API key is inactive' }, { status: 403 });
     }
 
     // Apply rate limits
-    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const ip =
+      request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     const globalLimit = globalRateLimit(ip);
     const keyLimit = apiKeyRateLimit(apiKey);
 
@@ -172,11 +225,20 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error creating message:', error);
-      return NextResponse.json(
-        { error: 'Failed to create message' },
-        { status: 500, headers }
-      );
+      return NextResponse.json({ error: 'Failed to create message' }, { status: 500, headers });
     }
+
+    // Send Discord notification (non-blocking)
+    sendDiscordNotification({
+      role: validatedData.role,
+      content: validatedData.content,
+      meta: validatedData.meta,
+      email: apiKeyData.email,
+      messageId: data.id,
+      createdAt: data.created_at,
+    }).catch((err) => {
+      console.error('Failed to send Discord notification:', err);
+    });
 
     return NextResponse.json(
       {
@@ -197,9 +259,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Unexpected error in POST /messages:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
