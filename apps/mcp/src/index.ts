@@ -19,12 +19,14 @@ interface Session {
 const sessions = new Map<string, Session>();
 
 // Enable CORS for all origins
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id'],
-  credentials: false
-}));
+app.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id'],
+    credentials: false,
+  })
+);
 
 app.use(express.json());
 
@@ -96,10 +98,14 @@ app.get('/sse', async (req, res) => {
 
 // POST endpoint for client messages routed by sessionId
 app.post('/message', async (req, res) => {
-  const sessionId = (req.query.sessionId as string | undefined) ?? (req.headers['x-session-id'] as string | undefined);
+  const sessionId =
+    (req.query.sessionId as string | undefined) ??
+    (req.headers['x-session-id'] as string | undefined);
 
   if (!sessionId) {
-    res.status(400).json({ error: 'Missing sessionId. Include ?sessionId=... or X-Session-Id header.' });
+    res
+      .status(400)
+      .json({ error: 'Missing sessionId. Include ?sessionId=... or X-Session-Id header.' });
     return;
   }
 
@@ -238,9 +244,31 @@ function setupToolHandlers(server: Server, apiKey: string) {
           if (params.limit) queryParams.set('limit', params.limit.toString());
           if (params.cursor) queryParams.set('cursor', params.cursor);
 
-          const response = await fetch(
-            `${BASE_URL}/api/messages?${queryParams.toString()}`
-          );
+          const fetchMessages = async (searchParams: URLSearchParams) => {
+            const searchQuery = searchParams.toString();
+            const url = `${BASE_URL}/api/messages${searchQuery ? `?${searchQuery}` : ''}`;
+            const response = await fetch(url);
+            return { response, url };
+          };
+
+          let { response } = await fetchMessages(queryParams);
+
+          if (!response.ok && params.search) {
+            const fallbackSearch = params.search.trim().split(/\s+/).filter(Boolean).join(' & ');
+
+            if (fallbackSearch && fallbackSearch !== params.search) {
+              const fallbackParams = new URLSearchParams(queryParams);
+              fallbackParams.set('search', fallbackSearch);
+              const fallbackResult = await fetchMessages(fallbackParams);
+
+              if (fallbackResult.response.ok) {
+                response = fallbackResult.response;
+              } else {
+                const error = await fallbackResult.response.text();
+                throw new Error(`Failed to search messages: ${error}`);
+              }
+            }
+          }
 
           if (!response.ok) {
             const error = await response.text();
