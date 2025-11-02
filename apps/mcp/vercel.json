@@ -1,7 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd ../.. && pnpm install && pnpm --filter=@anarchymcp/mcp build",
-  "installCommand": "echo 'Skipping default install'",
+  "buildCommand": "npm run build",
   "builds": [
     {
       "src": "dist/index.js",
