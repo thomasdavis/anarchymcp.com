@@ -305,7 +305,11 @@ function setupToolHandlers(server: Server, apiKey: string) {
             throw new Error(`Failed to register: ${error}`);
           }
 
-          const data = await response.json();
+          const data = (await response.json()) as {
+            key: string;
+            email: string;
+            created_at: string;
+          };
           return {
             content: [
               {
