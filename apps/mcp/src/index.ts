@@ -9,11 +9,20 @@ const app = express();
 const PORT = process.env.PORT || 3002;
 const BASE_URL = process.env.ANARCHYMCP_BASE_URL || 'https://anarchymcp.com';
 
+// Session storage
+interface Session {
+  server: Server;
+  transport: SSEServerTransport;
+  apiKey: string;
+}
+
+const sessions = new Map<string, Session>();
+
 // Enable CORS for all origins
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id'],
   credentials: false
 }));
 
@@ -21,14 +30,13 @@ app.use(express.json());
 
 // Health check
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'anarchymcp-mcp-server' });
+  res.json({ status: 'ok', service: 'anarchymcp-mcp-server', sessions: sessions.size });
 });
 
 // SSE endpoint for MCP
 app.get('/sse', async (req, res) => {
   console.log('New SSE connection established');
 
-  // Get API key from query parameter
   const apiKey = req.query.apiKey as string | undefined;
 
   if (!apiKey) {
@@ -36,45 +44,81 @@ app.get('/sse', async (req, res) => {
     return;
   }
 
-  // Set SSE headers
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+  let sessionId: string | undefined;
 
-  // Create MCP server instance
-  const server = new Server(
-    {
-      name: 'anarchymcp',
-      version: '0.1.0',
-    },
-    {
-      capabilities: {
-        tools: {},
+  try {
+    const server = new Server(
+      {
+        name: 'anarchymcp',
+        version: '0.1.0',
       },
+      {
+        capabilities: {
+          tools: {},
+        },
+      }
+    );
+
+    setupToolHandlers(server, apiKey);
+
+    const transport = new SSEServerTransport('/message', res);
+    sessionId = transport.sessionId;
+
+    res.setHeader('X-Accel-Buffering', 'no');
+    sessions.set(sessionId, { server, transport, apiKey });
+    res.setHeader('X-Session-Id', sessionId);
+    console.log(`[${sessionId}] Session stored. Total sessions: ${sessions.size}`);
+
+    transport.onclose = () => {
+      console.log(`[${sessionId}] SSE connection closed`);
+      if (sessionId) {
+        sessions.delete(sessionId);
+        console.log(`[${sessionId}] Session removed. Total sessions: ${sessions.size}`);
+      }
+    };
+
+    transport.onerror = (error: unknown) => {
+      console.error(`[${sessionId}] SSE transport error:`, error);
+    };
+
+    await server.connect(transport);
+    console.log(`[${sessionId}] MCP server connected to transport`);
+  } catch (error) {
+    console.error('Error establishing SSE session:', error);
+    if (sessionId) {
+      sessions.delete(sessionId);
     }
-  );
-
-  // Setup tool handlers
-  setupToolHandlers(server, apiKey);
-
-  // Create SSE transport
-  const transport = new SSEServerTransport('/message', res);
-
-  // Handle client disconnect
-  req.on('close', () => {
-    console.log('SSE connection closed');
-  });
-
-  // Connect server to transport
-  await server.connect(transport);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to establish SSE connection' });
+    }
+  }
 });
 
-// POST endpoint for client messages
-app.post('/message', async (_req, res) => {
-  // This endpoint receives messages from the client
-  // The SSE transport handles routing these to the appropriate session
-  res.status(200).end();
+// POST endpoint for client messages routed by sessionId
+app.post('/message', async (req, res) => {
+  const sessionId = (req.query.sessionId as string | undefined) ?? (req.headers['x-session-id'] as string | undefined);
+
+  if (!sessionId) {
+    res.status(400).json({ error: 'Missing sessionId. Include ?sessionId=... or X-Session-Id header.' });
+    return;
+  }
+
+  const session = sessions.get(sessionId);
+
+  if (!session) {
+    console.error(`[${sessionId}] Session not found`);
+    res.status(404).json({ error: 'Session not found' });
+    return;
+  }
+
+  try {
+    await session.transport.handlePostMessage(req, res, req.body);
+  } catch (error) {
+    console.error(`[${sessionId}] Error handling message:`, error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
 });
 
 function setupToolHandlers(server: Server, apiKey: string) {
