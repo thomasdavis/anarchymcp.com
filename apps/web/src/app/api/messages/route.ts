@@ -228,17 +228,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create message' }, { status: 500, headers });
     }
 
-    // Send Discord notification (non-blocking)
-    sendDiscordNotification({
-      role: validatedData.role,
-      content: validatedData.content,
-      meta: validatedData.meta,
-      email: apiKeyData.email,
-      messageId: data.id,
-      createdAt: data.created_at,
-    }).catch((err) => {
+    // Send Discord notification
+    try {
+      await sendDiscordNotification({
+        role: validatedData.role,
+        content: validatedData.content,
+        meta: validatedData.meta,
+        email: apiKeyData.email,
+        messageId: data.id,
+        createdAt: data.created_at,
+      });
+    } catch (err) {
+      // Log but don't fail the request if Discord webhook fails
       console.error('Failed to send Discord notification:', err);
-    });
+    }
 
     return NextResponse.json(
       {
